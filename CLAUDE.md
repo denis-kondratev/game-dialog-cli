@@ -62,14 +62,24 @@ this repo records only a new pointer, never the file changes.
 
 ## Stale docs to watch
 
-The published documentation lags the language, because it lives in a submodule that is easy to forget.
-When changing syntax or the public API, check these three places:
+The documentation lives in a submodule that is easy to forget, so it drifts. Remaining known-stale
+spots:
 
-- `docs/docs/syntax.md` — promises single-quoted strings (the lexer rejects them) and predates `>>`,
-  `xor`, string interpolation and multi-line strings.
-- `docs/docs/installation.md` — points at a dead `DialogLang` NuGet package and .NET 8; no project is
-  currently packable as a library, only the CLI is packed.
-- `lang/README.md` — still shows `dialog.Execute(script)` returning strings.
+- `lang/README.md` — still shows `dialog.Execute(script)` returning strings; the API is
+  `RunInline` / `RunFile` returning `IEnumerable<RuntimeItem>`.
+- root `README.md` — its example shows the `Variables:` block for a plain `gdialog script.gds`
+  invocation, but that block only appears with `--vars` / `-v`. It also omits `--about`, `>>` and the
+  exit codes.
+
+`docs/` was rewritten against the implementation (`docs/docs/language/*`, `errors.md`, `cli.md`,
+`limitations.md`, `quick-start.md`; the stale `syntax.md` is gone). When changing syntax, semantics or
+the CLI surface, update the matching page there — and note the convention that **every example is a
+runnable script with its real output**, which is what kept the old `syntax.md` from being verifiable.
+`docs/docs/limitations.md` doubles as the list of known defects (broken escape sequences, `#` and
+blank lines inside strings, CRLF, lax CLI argument parsing); fix one and remove its section.
+
+To check the site: `cd docs && npm ci && npm run build` — `onBrokenLinks` is `throw`, and broken
+heading anchors are reported as warnings, so read the build output rather than only its exit code.
 
 ## Conversation language
 
