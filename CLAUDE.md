@@ -8,11 +8,12 @@ details in this file.
 
 ## Repository layout
 
-| Path                          | Project             | Target                | Notes                                    |
-| ----------------------------- | ------------------- | --------------------- | ---------------------------------------- |
-| `cli/Cli.csproj`              | `gdialog` CLI       | `net10.0`             | Packed as a .NET global tool             |
-| `lang/Lang.csproj`            | interpreter library | `netstandard2.1`, C#9 | **git submodule** (`gamedialog/lang`)    |
-| `lang.tests/Lang.Tests.csproj` | xUnit tests        | `net10.0`             | Sees `internal` types via `InternalsVisibleTo` |
+| Path                           | Project             | Target                | Notes                                                         |
+| ------------------------------ | ------------------- | --------------------- | ------------------------------------------------------------- |
+| `cli/Cli.csproj`               | `gdialog` CLI       | `net10.0`             | Packed as a .NET global tool                                  |
+| `lang/Lang.csproj`             | interpreter library | `netstandard2.1`, C#9 | **git submodule** (`gamedialog/lang`)                         |
+| `lang.tests/Lang.Tests.csproj` | xUnit tests         | `net10.0`             | Sees `internal` types via `InternalsVisibleTo`                |
+| `docs/`                        | Docusaurus site     | Node                  | **git submodule** (`gamedialog/docs`); `npm start` to preview |
 
 Solution file: `game-dialog-cli.slnx`.
 
@@ -27,6 +28,27 @@ Solution file: `game-dialog-cli.slnx`.
 `TreatWarningsAsErrors` and `EnforceCodeStyleInBuild` are enabled in every project, and
 `.editorconfig` raises IDE0005 to an error — a single unused `using` fails the build.
 
+There is no CI: `.github/` holds only `copilot-instructions.md`, and no workflows exist. Every check
+runs locally, so build and test before declaring anything done.
+
+`dotnet build game-dialog-cli.slnx` **rewrites the solution file and silently drops projects it cannot
+resolve** — the build still reports success, it just builds less. After renaming or moving a project,
+run `git diff game-dialog-cli.slnx` and restore it if entries disappeared.
+
+## Local automation (`.claude/`)
+
+`settings.json`, the hooks and the commands are committed on purpose; only `settings.local.json` is
+personal (see the note in `.gitignore`).
+
+- `hooks/format-cs.sh` (PostToolUse on Write|Edit) runs `dotnet format whitespace` against the nearest
+  `.csproj` after **every** `.cs` edit. Do not hand-align whitespace, and expect the file on disk to
+  differ slightly from what was just written.
+- `hooks/submodule-status.sh` (SessionStart) injects `git submodule status` into the session context.
+- `/check` (`commands/check.md`) — build the solution, then run the tests; stop on failure.
+- `/release` (`commands/release.md`) — `dotnet pack` plus the `Homebrew` publish and `shasum` of the
+  tarball. The Homebrew formula lives in a separate repository, `gamedialog/homebrew-tools`. The command
+  never commits, tags or publishes unless asked.
+
 ## Submodules: check before committing
 
 `lang/` and `docs/` are separate git repositories:
@@ -38,24 +60,16 @@ Changes inside those directories do **not** belong to a commit in this repositor
 submodule first, then commit the updated submodule pointer here. Staging a submodule directory in
 this repo records only a new pointer, never the file changes.
 
-## Verified facts about the current code
+## Stale docs to watch
 
-The imported Copilot instructions are partly stale. Where they disagree with this section, this
-section is correct:
+The published documentation lags the language, because it lives in a submodule that is easy to forget.
+When changing syntax or the public API, check these three places:
 
-- Namespace is `GameDialog.Lang`, not `BitPatch.DialogLang`.
-- Public surface is `Dialog` with `RunInline(string)`, `RunFile(string)` and `Variables`; both run
-  methods yield `RuntimeItem` values.
-- CLI script execution lives in `cli/ScriptRunner.cs`; there is no `ScriptExecutor.cs`.
-- Test helpers are `Utils.Execute(script)`, `Utils.Parse()` and `Utils.Tokenize()` in
-  `lang.tests/TestUtils.cs`.
-
-## Known issue: csproj filename case
-
-Git tracks `cli/cli.csproj` and `lang.tests/lang.tests.csproj` in lowercase, while the working tree
-and `game-dialog-cli.slnx` reference `Cli.csproj` and `Lang.Tests.csproj`. This only resolves
-because macOS is case-insensitive; a case-sensitive checkout (Linux CI) cannot restore the
-solution. Fix with `git mv --force` before adding CI.
+- `docs/docs/syntax.md` — promises single-quoted strings (the lexer rejects them) and predates `>>`,
+  `xor`, string interpolation and multi-line strings.
+- `docs/docs/installation.md` — points at a dead `DialogLang` NuGet package and .NET 8; no project is
+  currently packable as a library, only the CLI is packed.
+- `lang/README.md` — still shows `dialog.Execute(script)` returning strings.
 
 ## Conversation language
 
