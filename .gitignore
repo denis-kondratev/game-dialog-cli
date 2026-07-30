@@ -485,3 +485,7 @@ $RECYCLE.BIN/
 
 # Test script files
 cli/script.gds
+
+# Claude Code: personal overrides only. Shared config (.claude/settings.json,
+# .claude/hooks, .claude/commands) is committed on purpose.
+.claude/settings.local.json
